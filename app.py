@@ -12,14 +12,21 @@ from models import db, User, Student, AttendanceLog, Bill, Payment, Complaint, N
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = os.environ.get(
-    'SECRET_KEY',
-    'dormio-secret-key-2024'
+app.config["SECRET_KEY"] = os.environ.get(
+    "SECRET_KEY",
+    "dormio-secret-key-2024"
 )
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+# Database connection from environment variable
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Important for serverless platforms
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300
+}
 
 db.init_app(app)
 login_manager = LoginManager()
