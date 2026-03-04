@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Status - HostelGuard{% endblock %}
+
+{% block body %}
+<div class="flex min-h-screen">
+    {% include 'sidebar.html' %}
+    
+    <!-- Main Content -->
+    <div class="flex-1 ml-0 lg:ml-64">
+        <!-- Top Bar -->
+        <div class="bg-white border-b border-slate-200 px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-semibold tracking-tight text-slate-800">Attendance Status</h1>
+                    <p class="text-sm text-slate-600 mt-1">Real-time hostel occupancy status</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-8">
+            <!-- Search Bar -->
+            <div class="mb-6">
+                <form method="GET" action="{{ url_for('attendance_status') }}" class="max-w-xl">
+                    <div class="relative">
+                        <input type="text" 
+                               name="search" 
+                               value="{{ search }}" 
+                               data-testid="search-student-input"
+                               placeholder="Search by student name..."
+                               class="w-full rounded-lg border-slate-300 border pl-12 pr-4 py-3 text-slate-900 focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all outline-none placeholder:text-slate-400">
+                        <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" style="font-size: 20px;"></i>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Status Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Students IN -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm" data-testid="students-in-section">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-green-50">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-semibold text-green-800">Students In Hostel</h2>
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold border border-green-200">
+                                {% set in_count = students|selectattr('current_status', 'equalto', 'IN')|list|length %}
+                                {{ in_count }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 space-y-2 max-h-[600px] overflow-y-auto">
+                        {% set students_in = students|selectattr('current_status', 'equalto', 'IN')|list %}
+                        {% if students_in %}
+                            {% for student in students_in %}
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 hover:shadow-sm transition-shadow" data-testid="student-in-card">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <h3 class="font-semibold text-slate-900">{{ student.name }}</h3>
+                                        <div class="mt-2 space-y-1">
+                                            <p class="text-xs text-slate-600">
+                                                <i class="ph ph-identification-badge mr-1"></i>
+                                                Roll: {{ student.roll_number }}
+                                            </p>
+                                            <p class="text-xs text-slate-600">
+                                                <i class="ph ph-door mr-1"></i>
+                                                Room: {{ student.room_number }}
+                                            </p>
+                                            <p class="text-xs text-slate-600">
+                                                <i class="ph ph-phone mr-1"></i>
+                                                {{ student.contact }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                        <i class="ph-fill ph-circle mr-1" style="font-size: 8px;"></i>IN
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-12">
+                                <i class="ph ph-users text-slate-300" style="font-size: 48px;"></i>
+                                <p class="text-slate-500 mt-3 text-sm">No students currently in hostel</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Students OUT -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm" data-testid="students-out-section">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-red-50">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-semibold text-red-800">Students Out of Hostel</h2>
+                            <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold border border-red-200">
+                                {% set out_count = students|selectattr('current_status', 'equalto', 'OUT')|list|length %}
+                                {{ out_count }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 space-y-2 max-h-[600px] overflow-y-auto">
+                        {% set students_out = students|selectattr('current_status', 'equalto', 'OUT')|list %}
+                        {% if students_out %}
+                            {% for student in students_out %}
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4 hover:shadow-sm transition-shadow" data-testid="student-out-card">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <h3 class="font-semibold text-slate-900">{{ student.name }}</h3>
+                                        <div class="mt-2 space-y-1">
+                                            <p class="text-xs text-slate-600">
+                                                <i class="ph ph-identification-badge mr-1"></i>
+                                                Roll: {{ student.roll_number }}
+                                            </p>
+                                            <p class="text-xs text-slate-600">
+                                                <i class="ph ph-door mr-1"></i>
+                                                Room: {{ student.room_number }}
+                                            </p>
+                                            <p class="text-xs text-slate-600">
+                                                <i class="ph ph-phone mr-1"></i>
+                                                {{ student.contact }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                        <i class="ph-fill ph-circle mr-1" style="font-size: 8px;"></i>OUT
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-12">
+                                <i class="ph ph-users text-slate-300" style="font-size: 48px;"></i>
+                                <p class="text-slate-500 mt-3 text-sm">All students are in hostel</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

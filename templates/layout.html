@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Dormio{% endblock %}
+
+{% block body %}
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="fixed top-0 left-0 h-full w-64 bg-slate-900 text-white shadow-xl z-20 hidden lg:block">
+        <div class="px-6 py-6 border-b border-slate-800">
+            <div class="flex items-center space-x-3">
+                <div class="bg-slate-800 rounded-lg p-2">
+                    <i class="ph-bold ph-buildings text-white" style="font-size: 28px;"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold tracking-tight">Dormio</h2>
+                    <p class="text-xs text-slate-400">Hostel Management</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="px-4 py-6 space-y-2">
+            {{ sidebar_content }}
+        </nav>
+        
+        <div class="absolute bottom-0 left-0 right-0 px-6 py-6 border-t border-slate-800">
+            <div class="flex items-center space-x-3">
+                <div class="bg-slate-800 rounded-full p-2">
+                    <i class="ph-bold ph-user-circle text-slate-400" style="font-size: 24px;"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-white">{{ current_user.full_name }}</p>
+                    <p class="text-xs text-slate-400 capitalize">{{ current_user.role }}</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="flex-1 ml-0 lg:ml-64">
+        <!-- Top Bar -->
+        <div class="bg-white border-b border-slate-200 px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-semibold tracking-tight text-slate-800">{{ page_title }}</h1>
+                    {% if page_subtitle %}
+                    <p class="text-sm text-slate-600 mt-1">{{ page_subtitle }}</p>
+                    {% endif %}
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-slate-600">{{ current_user.full_name }}</span>
+                    <a href="{{ url_for('logout') }}" 
+                       data-testid="logout-btn"
+                       class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-lg transition-all text-sm">
+                        <i class="ph ph-sign-out mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="p-4">
+                    {% for category, message in messages %}
+                        <div class="{% if category == 'error' %}bg-red-50 border-red-200 text-red-800{% else %}bg-green-50 border-green-200 text-green-800{% endif %} border px-4 py-3 rounded-lg mb-2 flex items-center">
+                            <i class="ph-bold ph-{% if category == 'error' %}warning-circle{% else %}check-circle{% endif %} mr-2" style="font-size: 20px;"></i>
+                            <span class="text-sm">{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Page Content -->
+        <div class="p-8">
+            {% block page_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

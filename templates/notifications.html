@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% set page_title = "Notifications" %}
+{% set page_subtitle = "Stay updated with important alerts" %}
+{% block page_content %}
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+    <div class="px-6 py-4 border-b border-slate-200">
+        <h2 class="text-xl font-medium text-slate-800">All Notifications</h2>
+    </div>
+    
+    {% if notifications %}
+    <div class="divide-y divide-slate-100">
+        {% for notif in notifications %}
+        <div class="px-6 py-4 hover:bg-slate-50 {% if not notif.read %}bg-blue-50{% endif %}">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 mr-4">
+                    {% if notif.type == 'bill' %}
+                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <i class="ph-bold ph-receipt text-green-700" style="font-size: 20px;"></i>
+                    </div>
+                    {% elif notif.type == 'complaint' %}
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="ph-bold ph-chat-circle-dots text-blue-700" style="font-size: 20px;"></i>
+                    </div>
+                    {% elif notif.type == 'attendance' %}
+                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="ph-bold ph-clock-clockwise text-purple-700" style="font-size: 20px;"></i>
+                    </div>
+                    {% else %}
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                        <i class="ph-bold ph-bell text-slate-700" style="font-size: 20px;"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-slate-900">{{ notif.title }}</h3>
+                    <p class="text-sm text-slate-600 mt-1">{{ notif.message }}</p>
+                    <p class="text-xs text-slate-400 mt-2">{{ notif.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                </div>
+                {% if not notif.read %}
+                <div class="flex-shrink-0 ml-4">
+                    <span class="inline-flex items-center w-2 h-2 rounded-full bg-blue-600"></span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-6 py-16 text-center">
+        <i class="ph ph-bell-slash text-slate-300" style="font-size: 64px;"></i>
+        <p class="text-slate-500 mt-4">No notifications yet</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% set sidebar_content %}
+{% if current_user.role == 'student' %}
+<a href="{{ url_for('student_dashboard') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"><i class="ph-bold ph-house mr-3" style="font-size: 20px;"></i><span>Dashboard</span></a>
+<a href="{{ url_for('student_attendance') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"><i class="ph-bold ph-clock-clockwise mr-3" style="font-size: 20px;"></i><span>My Attendance</span></a>
+<a href="{{ url_for('student_bills') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"><i class="ph-bold ph-receipt mr-3" style="font-size: 20px;"></i><span>Bills</span></a>
+<a href="{{ url_for('student_complaints') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"><i class="ph-bold ph-chat-circle-dots mr-3" style="font-size: 20px;"></i><span>Complaints</span></a>
+<a href="{{ url_for('notifications') }}" class="flex items-center px-4 py-3 rounded-lg text-white bg-slate-800"><i class="ph-bold ph-bell mr-3" style="font-size: 20px;"></i><span>Notifications</span></a>
+{% endif %}
+{% endset %}
