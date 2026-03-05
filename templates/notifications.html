@@ -1,12 +1,43 @@
 {% extends "layout.html" %}
 {% set page_title = "Notifications" %}
 {% set page_subtitle = "Stay updated with important alerts" %}
+
 {% block page_content %}
+{% if current_user.role in ['admin', 'warden', 'principal'] %}
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
+    <div class="px-6 py-4 border-b border-slate-200">
+        <h2 class="text-xl font-medium text-slate-800">Send Message</h2>
+    </div>
+    <form method="POST" action="{{ url_for('send_staff_message') }}" class="p-6 space-y-4">
+        <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-2">To</label>
+            <select name="recipient_id" required class="w-full rounded-lg border px-4 py-2">
+                <option value="">Select recipient</option>
+                {% for user in staff_users %}
+                <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role|title }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-2">Subject</label>
+            <input type="text" name="subject" required class="w-full rounded-lg border px-4 py-2">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-2">Message</label>
+            <textarea name="message" rows="4" required class="w-full rounded-lg border px-4 py-2"></textarea>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit" class="bg-slate-900 text-white font-medium py-2.5 px-5 rounded-lg">Send</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
 <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
     <div class="px-6 py-4 border-b border-slate-200">
         <h2 class="text-xl font-medium text-slate-800">All Notifications</h2>
     </div>
-    
+
     {% if notifications %}
     <div class="divide-y divide-slate-100">
         {% for notif in notifications %}
@@ -22,8 +53,12 @@
                         <i class="ph-bold ph-chat-circle-dots text-blue-700" style="font-size: 20px;"></i>
                     </div>
                     {% elif notif.type == 'attendance' %}
-                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                        <i class="ph-bold ph-clock-clockwise text-purple-700" style="font-size: 20px;"></i>
+                    <div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+                        <i class="ph-bold ph-clock-clockwise text-teal-700" style="font-size: 20px;"></i>
+                    </div>
+                    {% elif notif.type == 'message' %}
+                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                        <i class="ph-bold ph-envelope-simple text-amber-700" style="font-size: 20px;"></i>
                     </div>
                     {% else %}
                     <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
@@ -31,11 +66,28 @@
                     </div>
                     {% endif %}
                 </div>
+
                 <div class="flex-1">
                     <h3 class="font-semibold text-slate-900">{{ notif.title }}</h3>
+                    {% if notif.type == 'message' and notif.sender %}
+                    <p class="text-xs text-slate-500 mt-1">From: {{ notif.sender.full_name }} ({{ notif.sender.role|title }})</p>
+                    {% endif %}
                     <p class="text-sm text-slate-600 mt-1">{{ notif.message }}</p>
                     <p class="text-xs text-slate-400 mt-2">{{ notif.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+
+                    {% if current_user.role in ['admin', 'warden', 'principal'] and notif.type == 'message' and notif.sender_id %}
+                    <div class="mt-3">
+                        <button type="button" onclick="toggleReplyForm('reply-{{ notif.id }}')" class="text-sm text-blue-700 hover:text-blue-900">Reply</button>
+                    </div>
+                    <form id="reply-{{ notif.id }}" method="POST" action="{{ url_for('reply_staff_message', id=notif.id) }}" class="hidden mt-3">
+                        <textarea name="reply_message" rows="3" required class="w-full rounded-lg border px-3 py-2 text-sm" placeholder="Write your reply..."></textarea>
+                        <div class="mt-2 flex justify-end">
+                            <button type="submit" class="bg-slate-900 text-white text-sm py-2 px-4 rounded-lg">Send Reply</button>
+                        </div>
+                    </form>
+                    {% endif %}
                 </div>
+
                 {% if not notif.read %}
                 <div class="flex-shrink-0 ml-4">
                     <span class="inline-flex items-center w-2 h-2 rounded-full bg-blue-600"></span>
@@ -52,7 +104,16 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function toggleReplyForm(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('hidden');
+}
+</script>
 {% endblock %}
+
 {% set sidebar_content %}
 {% if current_user.role == 'student' %}
 <a href="{{ url_for('student_dashboard') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"><i class="ph-bold ph-house mr-3" style="font-size: 20px;"></i><span>Dashboard</span></a>
@@ -60,5 +121,24 @@
 <a href="{{ url_for('student_bills') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"><i class="ph-bold ph-receipt mr-3" style="font-size: 20px;"></i><span>Bills</span></a>
 <a href="{{ url_for('student_complaints') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all"><i class="ph-bold ph-chat-circle-dots mr-3" style="font-size: 20px;"></i><span>Complaints</span></a>
 <a href="{{ url_for('notifications') }}" class="flex items-center px-4 py-3 rounded-lg text-white bg-slate-800"><i class="ph-bold ph-bell mr-3" style="font-size: 20px;"></i><span>Notifications</span></a>
+{% elif current_user.role == 'warden' %}
+<a href="{{ url_for('warden_dashboard') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-house mr-3" style="font-size:20px;"></i><span>Dashboard</span></a>
+<a href="{{ url_for('warden_students') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-users mr-3" style="font-size:20px;"></i><span>Students</span></a>
+<a href="{{ url_for('warden_bills') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-receipt mr-3" style="font-size:20px;"></i><span>Bills</span></a>
+<a href="{{ url_for('warden_complaints') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-chat-circle-dots mr-3" style="font-size:20px;"></i><span>Complaints</span></a>
+<a href="{{ url_for('warden_attendance') }}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-clock-clockwise mr-3" style="font-size:20px;"></i><span>Attendance</span></a>
+<a href="{{ url_for('notifications') }}" class="flex items-center px-4 py-3 rounded-lg text-white bg-slate-800"><i class="ph-bold ph-bell mr-3" style="font-size:20px;"></i><span>Notifications</span></a>
+{% elif current_user.role == 'admin' %}
+<a href="{{url_for('admin_dashboard')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-house mr-3" style="font-size:20px;"></i><span>Dashboard</span></a>
+<a href="{{url_for('admin_users')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-user-gear mr-3" style="font-size:20px;"></i><span>User Management</span></a>
+<a href="{{url_for('admin_students')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-users mr-3" style="font-size:20px;"></i><span>Students</span></a>
+<a href="{{url_for('admin_bills')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-receipt mr-3" style="font-size:20px;"></i><span>Bills</span></a>
+<a href="{{url_for('admin_complaints')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-chat-circle-dots mr-3" style="font-size:20px;"></i><span>Complaints</span></a>
+<a href="{{ url_for('notifications') }}" class="flex items-center px-4 py-3 rounded-lg text-white bg-slate-800"><i class="ph-bold ph-bell mr-3" style="font-size:20px;"></i><span>Notifications</span></a>
+{% elif current_user.role == 'principal' %}
+<a href="{{url_for('principal_dashboard')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-house mr-3" style="font-size:20px;"></i><span>Dashboard</span></a>
+<a href="{{url_for('principal_reports')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-chart-line mr-3" style="font-size:20px;"></i><span>Reports</span></a>
+<a href="{{url_for('principal_attendance')}}" class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"><i class="ph-bold ph-clock-clockwise mr-3" style="font-size:20px;"></i><span>Attendance</span></a>
+<a href="{{ url_for('notifications') }}" class="flex items-center px-4 py-3 rounded-lg text-white bg-slate-800"><i class="ph-bold ph-bell mr-3" style="font-size:20px;"></i><span>Notifications</span></a>
 {% endif %}
 {% endset %}

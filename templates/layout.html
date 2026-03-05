@@ -87,6 +87,10 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="{{ url_for('notifications') }}" class="relative bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg transition-all" aria-label="Notifications">
+                        <i class="ph-bold ph-bell" style="font-size: 20px;"></i>
+                        <span id="unread-notification-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-[11px] leading-[18px] text-center rounded-full">0</span>
+                    </a>
                     <span class="text-sm text-slate-600 hidden sm:inline">{{ current_user.full_name }}</span>
                     <a href="{{ url_for('logout') }}" 
                        data-testid="logout-btn"
@@ -128,14 +132,36 @@ function closeMobileSidebar() {
     document.getElementById('mobile-sidebar-overlay').classList.add('hidden');
 }
 
+function refreshUnreadCount() {
+    var badge = document.getElementById('unread-notification-badge');
+    if (!badge) return;
+
+    fetch('{{ url_for("unread_notifications") }}')
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            var count = data && data.count ? data.count : 0;
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : String(count);
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        })
+        .catch(function() {
+            badge.classList.add('hidden');
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     var mobileSidebar = document.getElementById('mobile-sidebar');
-    if (!mobileSidebar) return;
+    if (mobileSidebar) {
+        var links = mobileSidebar.querySelectorAll('a[href]');
+        links.forEach(function(link) {
+            link.addEventListener('click', closeMobileSidebar);
+        });
+    }
 
-    var links = mobileSidebar.querySelectorAll('a[href]');
-    links.forEach(function(link) {
-        link.addEventListener('click', closeMobileSidebar);
-    });
+    refreshUnreadCount();
 });
 </script>
 {% endblock %}

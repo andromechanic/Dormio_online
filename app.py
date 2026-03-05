@@ -7,10 +7,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 import io
 from flask import request, jsonify
+from sqlalchemy import inspect, text
 
 from models import db, User, Student, AttendanceLog, Bill, Payment, Complaint, Notification
 
 app = Flask(__name__)
+STAFF_ROLES = ('admin', 'warden', 'principal')
 
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
@@ -52,9 +54,26 @@ def role_required(*roles):
 def get_staff_route(warden_endpoint, admin_endpoint):
     return admin_endpoint if current_user.role == 'admin' else warden_endpoint
 
+def ensure_notification_message_columns():
+    inspector = inspect(db.engine)
+    columns = {c['name'] for c in inspector.get_columns('notification')}
+
+    alter_statements = []
+    if 'sender_id' not in columns:
+        alter_statements.append("ALTER TABLE notification ADD COLUMN sender_id INTEGER")
+    if 'parent_notification_id' not in columns:
+        alter_statements.append("ALTER TABLE notification ADD COLUMN parent_notification_id INTEGER")
+
+    for stmt in alter_statements:
+        db.session.execute(text(stmt))
+
+    if alter_statements:
+        db.session.commit()
+
 # Initialize database with default users
 with app.app_context():
     db.create_all()
+    ensure_notification_message_columns()
     
     # Create default users if not exist
     if not User.query.filter_by(username='admin').first():
@@ -600,11 +619,83 @@ def toggle_user(id):
 @login_required
 def notifications():
     user_notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
+    staff_users = []
+    if current_user.role in STAFF_ROLES:
+        staff_users = User.query.filter(User.role.in_(STAFF_ROLES), User.id != current_user.id).order_by(User.full_name).all()
+
     # Mark all as read
     for notif in user_notifications:
         notif.read = True
     db.session.commit()
-    return render_template('notifications.html', notifications=user_notifications)
+    return render_template('notifications.html', notifications=user_notifications, staff_users=staff_users)
+
+@app.route('/notifications/send', methods=['POST'])
+@login_required
+@role_required('admin', 'warden', 'principal')
+def send_staff_message():
+    recipient_id = request.form.get('recipient_id', type=int)
+    subject = (request.form.get('subject') or '').strip()
+    message = (request.form.get('message') or '').strip()
+
+    if not recipient_id or not subject or not message:
+        flash('Recipient, subject, and message are required.', 'error')
+        return redirect(url_for('notifications'))
+
+    recipient = User.query.get(recipient_id)
+    if not recipient or recipient.role not in STAFF_ROLES:
+        flash('Invalid recipient selected.', 'error')
+        return redirect(url_for('notifications'))
+    if recipient.id == current_user.id:
+        flash('Please select a different recipient.', 'error')
+        return redirect(url_for('notifications'))
+
+    notification = Notification(
+        user_id=recipient.id,
+        sender_id=current_user.id,
+        title=subject,
+        message=message,
+        type='message'
+    )
+    db.session.add(notification)
+    db.session.commit()
+    flash('Message sent successfully.', 'success')
+    return redirect(url_for('notifications'))
+
+@app.route('/notifications/reply/<int:id>', methods=['POST'])
+@login_required
+@role_required('admin', 'warden', 'principal')
+def reply_staff_message(id):
+    source = Notification.query.get_or_404(id)
+    reply_text = (request.form.get('reply_message') or '').strip()
+
+    if not reply_text:
+        flash('Reply message is required.', 'error')
+        return redirect(url_for('notifications'))
+
+    if not source.sender_id:
+        flash('This notification cannot be replied to.', 'error')
+        return redirect(url_for('notifications'))
+
+    recipient = User.query.get(source.sender_id)
+    if not recipient or recipient.role not in STAFF_ROLES:
+        flash('Original sender is not available for reply.', 'error')
+        return redirect(url_for('notifications'))
+
+    base_subject = source.title or 'Message'
+    subject = base_subject if base_subject.startswith('Re:') else f'Re: {base_subject}'
+
+    reply_notification = Notification(
+        user_id=recipient.id,
+        sender_id=current_user.id,
+        parent_notification_id=source.id,
+        title=subject,
+        message=reply_text,
+        type='message'
+    )
+    db.session.add(reply_notification)
+    db.session.commit()
+    flash('Reply sent successfully.', 'success')
+    return redirect(url_for('notifications'))
 
 @app.route('/api/notifications/unread-count')
 @login_required

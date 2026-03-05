@@ -38,6 +38,13 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan"
     )
 
+    sent_notifications = db.relationship(
+        "Notification",
+        foreign_keys="Notification.sender_id",
+        backref="sender",
+        lazy=True
+    )
+
     # Complaints assigned to staff
     assigned_complaints = db.relationship(
         "Complaint",
@@ -263,6 +270,16 @@ class Notification(db.Model):
         db.Integer,
         db.ForeignKey("user.id", ondelete="CASCADE"),
         nullable=False
+    )
+
+    sender_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id", ondelete="SET NULL")
+    )
+
+    parent_notification_id = db.Column(
+        db.Integer,
+        db.ForeignKey("notification.id", ondelete="SET NULL")
     )
 
     title = db.Column(db.String(200), nullable=False)
