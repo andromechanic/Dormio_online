@@ -30,14 +30,16 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan"
     )
 
-    # Notifications relationship
+    # Notifications received
     notifications = db.relationship(
         "Notification",
-        backref="user",
+        foreign_keys="Notification.user_id",
+        backref="receiver",
         lazy=True,
         cascade="all, delete-orphan"
     )
 
+    # Notifications sent
     sent_notifications = db.relationship(
         "Notification",
         foreign_keys="Notification.sender_id",
@@ -154,17 +156,14 @@ class Bill(db.Model):
     )
 
     bill_type = db.Column(db.String(50), nullable=False)  # mess, electricity, rent
-
     amount = db.Column(db.Float, nullable=False)
 
     month = db.Column(db.String(20), nullable=False)  # January 2026
-
     semester = db.Column(db.Integer)
 
     due_date = db.Column(db.Date, nullable=False)
 
     paid = db.Column(db.Boolean, default=False)
-
     paid_date = db.Column(db.DateTime)
 
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -202,7 +201,6 @@ class Payment(db.Model):
     amount = db.Column(db.Float, nullable=False)
 
     payment_method = db.Column(db.String(50))  # cash, online, card
-
     transaction_id = db.Column(db.String(100))
 
     payment_date = db.Column(
@@ -227,13 +225,10 @@ class Complaint(db.Model):
     ticket_id = db.Column(db.String(20), unique=True, nullable=False)
 
     category = db.Column(db.String(50), nullable=False)
-
     subject = db.Column(db.String(200), nullable=False)
-
     description = db.Column(db.Text, nullable=False)
 
     status = db.Column(db.String(20), default="open")
-
     priority = db.Column(db.String(20), default="medium")
 
     created_at = db.Column(
@@ -283,14 +278,18 @@ class Notification(db.Model):
     )
 
     title = db.Column(db.String(200), nullable=False)
-
     message = db.Column(db.Text, nullable=False)
 
     type = db.Column(db.String(50))  # bill, complaint, attendance, general
-
     read = db.Column(db.Boolean, default=False)
 
     created_at = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc)
+    )
+
+    parent = db.relationship(
+        "Notification",
+        remote_side=[id],
+        backref="replies"
     )
