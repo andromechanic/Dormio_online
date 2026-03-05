@@ -49,6 +49,9 @@ def role_required(*roles):
         return decorated_function
     return decorator
 
+def get_staff_route(warden_endpoint, admin_endpoint):
+    return admin_endpoint if current_user.role == 'admin' else warden_endpoint
+
 # Initialize database with default users
 with app.app_context():
     db.create_all()
@@ -255,6 +258,7 @@ def warden_dashboard():
                          recent_complaints=recent_complaints)
 
 @app.route('/warden/students', methods=['GET', 'POST'])
+@app.route('/admin/students', methods=['GET', 'POST'], endpoint='admin_students')
 @login_required
 @role_required('warden', 'admin')
 def warden_students():
@@ -266,7 +270,7 @@ def warden_students():
         # Check if username already exists
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'error')
-            return redirect(url_for('warden_students'))
+            return redirect(url_for(get_staff_route('warden_students', 'admin_students')))
         
         user = User(
             username=username,
@@ -283,7 +287,7 @@ def warden_students():
         if Student.query.filter_by(rfid_code=rfid_code).first():
             db.session.rollback()
             flash('RFID code already exists', 'error')
-            return redirect(url_for('warden_students'))
+            return redirect(url_for(get_staff_route('warden_students', 'admin_students')))
         
         # Create student profile
         student = Student(
@@ -308,13 +312,14 @@ def warden_students():
         
         db.session.commit()
         flash(f'Student registered successfully. Username: {username}, Password: {password}', 'success')
-        return redirect(url_for('warden_students'))
+        return redirect(url_for(get_staff_route('warden_students', 'admin_students')))
     
     students = db.session.query(Student, User)\
         .select_from(Student)\
         .join(User, Student.user_id == User.id)\
         .order_by(Student.created_at.desc()).all()
-    return render_template('warden/students.html', students=students)
+    template_name = 'admin/students.html' if current_user.role == 'admin' else 'warden/students.html'
+    return render_template(template_name, students=students)
 
 @app.route('/warden/students/delete/<int:id>', methods=['POST'])
 @login_required
@@ -326,9 +331,10 @@ def delete_student(id):
     db.session.delete(user)
     db.session.commit()
     flash('Student deleted successfully', 'success')
-    return redirect(url_for('warden_students'))
+    return redirect(url_for(get_staff_route('warden_students', 'admin_students')))
 
 @app.route('/warden/bills', methods=['GET', 'POST'])
+@app.route('/admin/bills', methods=['GET', 'POST'], endpoint='admin_bills')
 @login_required
 @role_required('warden', 'admin')
 def warden_bills():
@@ -357,7 +363,7 @@ def warden_bills():
         
         db.session.commit()
         flash('Bill created successfully', 'success')
-        return redirect(url_for('warden_bills'))
+        return redirect(url_for(get_staff_route('warden_bills', 'admin_bills')))
     
     bills = db.session.query(Bill, Student, User)\
         .select_from(Bill)\
@@ -367,7 +373,8 @@ def warden_bills():
     students = db.session.query(Student, User)\
         .select_from(Student)\
         .join(User, Student.user_id == User.id).all()
-    return render_template('warden/bills.html', bills=bills, students=students)
+    template_name = 'admin/bills.html' if current_user.role == 'admin' else 'warden/bills.html'
+    return render_template(template_name, bills=bills, students=students)
 
 @app.route('/warden/bills/mark-paid/<int:id>', methods=['POST'])
 @login_required
@@ -400,9 +407,10 @@ def mark_bill_paid(id):
     
     db.session.commit()
     flash('Bill marked as paid', 'success')
-    return redirect(url_for('warden_bills'))
+    return redirect(url_for(get_staff_route('warden_bills', 'admin_bills')))
 
 @app.route('/warden/complaints')
+@app.route('/admin/complaints', endpoint='admin_complaints')
 @login_required
 @role_required('warden', 'admin')
 def warden_complaints():
@@ -416,7 +424,8 @@ def warden_complaints():
         query = query.filter(Complaint.status == status_filter)
     
     complaints = query.order_by(Complaint.created_at.desc()).all()
-    return render_template('warden/complaints.html', complaints=complaints, status_filter=status_filter)
+    template_name = 'admin/complaints.html' if current_user.role == 'admin' else 'warden/complaints.html'
+    return render_template(template_name, complaints=complaints, status_filter=status_filter)
 
 @app.route('/warden/complaints/update/<int:id>', methods=['POST'])
 @login_required
@@ -444,7 +453,7 @@ def update_complaint(id):
     
     db.session.commit()
     flash('Complaint updated successfully', 'success')
-    return redirect(url_for('warden_complaints'))
+    return redirect(url_for(get_staff_route('warden_complaints', 'admin_complaints')))
 
 @app.route('/warden/attendance')
 @login_required
