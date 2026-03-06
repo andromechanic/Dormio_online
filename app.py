@@ -56,6 +56,13 @@ def role_required(*roles):
 def get_staff_route(warden_endpoint, admin_endpoint):
     return admin_endpoint if current_user.role == 'admin' else warden_endpoint
 
+def to_ist(dt_value):
+    if not dt_value:
+        return dt_value
+    if dt_value.tzinfo is None:
+        dt_value = dt_value.replace(tzinfo=timezone.utc)
+    return dt_value.astimezone(IST)
+
 def ensure_notification_message_columns():
     inspector = inspect(db.engine)
     columns = {c['name'] for c in inspector.get_columns('notification')}
@@ -166,6 +173,8 @@ def student_dashboard():
     
     # Get recent attendance
     recent_logs = AttendanceLog.query.filter_by(student_id=student.id).order_by(AttendanceLog.timestamp.desc()).limit(10).all()
+    for log in recent_logs:
+        log.timestamp = to_ist(log.timestamp)
     
     # Get unread notifications
     unread_notifications = Notification.query.filter_by(user_id=current_user.id, read=False).count()
@@ -185,6 +194,8 @@ def student_dashboard():
 def student_attendance():
     student = Student.query.filter_by(user_id=current_user.id).first()
     logs = AttendanceLog.query.filter_by(student_id=student.id).order_by(AttendanceLog.timestamp.desc()).all()
+    for log in logs:
+        log.timestamp = to_ist(log.timestamp)
     return render_template('student/attendance.html', logs=logs, student=student)
 
 @app.route('/student/bills')
@@ -261,6 +272,8 @@ def warden_dashboard():
         .join(Student, AttendanceLog.student_id == Student.id)\
         .order_by(AttendanceLog.timestamp.desc())\
         .limit(10).all()
+    for log, _student in recent_logs:
+        log.timestamp = to_ist(log.timestamp)
     
     # Pending complaints
     recent_complaints = db.session.query(Complaint, Student)\
@@ -533,6 +546,8 @@ def principal_reports():
         .filter(AttendanceLog.timestamp >= thirty_days_ago)\
         .order_by(AttendanceLog.timestamp.desc())\
         .limit(100).all()
+    for log, _student, _user in attendance_logs:
+        log.timestamp = to_ist(log.timestamp)
     
     # Billing report
     billing_summary = db.session.query(
@@ -737,7 +752,7 @@ def rfid_scan():
     log = AttendanceLog(
         student_id=student.id,
         action=new_status,
-        timestamp=datetime.now(IST)
+        timestamp=datetime.now(timezone.utc)
     )
     db.session.add(log)
     db.session.commit()
@@ -780,7 +795,7 @@ def export_attendance():
     
     # Data
     for row, (log, student, user) in enumerate(logs, 2):
-        ws.cell(row=row, column=1, value=log.timestamp.strftime('%Y-%m-%d %H:%M:%S'))
+        ws.cell(row=row, column=1, value=to_ist(log.timestamp).strftime('%Y-%m-%d %H:%M:%S'))
         ws.cell(row=row, column=2, value=user.full_name)
         ws.cell(row=row, column=3, value=student.roll_number)
         ws.cell(row=row, column=4, value=student.room_number)
