@@ -41,12 +41,6 @@
             <span class="font-medium">Attendance Logs</span>
         </a>
         
-        <a href="{{ url_for('rfid_simulator') }}" 
-           data-testid="nav-rfid-simulator"
-           class="flex items-center px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all {% if request.endpoint == 'rfid_simulator' %}bg-slate-800 text-white{% endif %}">
-            <i class="ph-bold ph-device-mobile mr-3" style="font-size: 20px;"></i>
-            <span class="font-medium">RFID Simulator</span>
-        </a>
     </nav>
     
     <div class="absolute bottom-0 left-0 right-0 px-6 py-6 border-t border-slate-800">

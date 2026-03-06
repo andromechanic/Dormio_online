@@ -708,55 +708,6 @@ def unread_notifications():
     count = Notification.query.filter_by(user_id=current_user.id, read=False).count()
     return jsonify({'count': count})
 
-# RFID Simulator
-@app.route('/rfid-simulator')
-@login_required
-def rfid_simulator():
-    return render_template('rfid_simulator.html')
-
-
-
-@app.route('/rfid-scan', methods=['GET', 'POST'])
-def rfid_scan():
-
-    # If ESP sends GET request
-    if request.method == 'GET':
-        rfid_code = request.args.get('data_2', '').strip()
-
-    # If mobile/app sends POST JSON
-    else:
-        data = request.get_json()
-        rfid_code = data.get('rfid_code', '').strip()
-
-    if not rfid_code:
-        return jsonify({'success': False, 'message': 'RFID code is required'}), 400
-
-    student = Student.query.filter_by(rfid_code=rfid_code).first()
-
-    if not student:
-        return jsonify({
-            'success': False,
-            'message': 'Student not found. Please register this RFID code.'
-        }), 404
-
-    # Toggle status
-    new_status = 'IN' if student.current_status == 'OUT' else 'OUT'
-    student.current_status = new_status
-
-    log = AttendanceLog(student_id=student.id, action=new_status)
-    db.session.add(log)
-    db.session.commit()
-
-    user = User.query.get(student.user_id)
-
-    return jsonify({
-        'success': True,
-        'student_name': user.full_name,
-        'roll_number': student.roll_number,
-        'action': new_status,
-        'timestamp': log.timestamp.isoformat()
-    })
-
 @app.route('/attendance/export')
 @login_required
 @role_required('warden', 'admin', 'principal')
