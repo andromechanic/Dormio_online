@@ -640,22 +640,59 @@ def notifications():
     if current_user.role == 'student':
         message_recipients_query = message_recipients_query.filter(User.role != 'student')
     message_recipients = message_recipients_query.order_by(User.full_name).all()
+    can_broadcast_to_students = current_user.role in STAFF_ROLES
 
     # Mark all as read
     for notif in user_notifications:
         notif.read = True
     db.session.commit()
-    return render_template('notifications.html', notifications=user_notifications, message_recipients=message_recipients)
+    return render_template(
+        'notifications.html',
+        notifications=user_notifications,
+        message_recipients=message_recipients,
+        can_broadcast_to_students=can_broadcast_to_students
+    )
 
 @app.route('/notifications/send', methods=['POST'])
 @login_required
 def send_staff_message():
-    recipient_id = request.form.get('recipient_id', type=int)
+    recipient_token = (request.form.get('recipient_id') or '').strip()
     subject = (request.form.get('subject') or '').strip()
     message = (request.form.get('message') or '').strip()
 
-    if not recipient_id or not subject or not message:
+    if not recipient_token or not subject or not message:
         flash('Recipient, subject, and message are required.', 'error')
+        return redirect(url_for('notifications'))
+
+    if recipient_token == 'all_students':
+        if current_user.role not in STAFF_ROLES:
+            flash('You are not allowed to send broadcast messages.', 'error')
+            return redirect(url_for('notifications'))
+
+        student_recipients = User.query.filter_by(role='student', is_active=True).all()
+        if not student_recipients:
+            flash('No active students found for broadcast.', 'error')
+            return redirect(url_for('notifications'))
+
+        notifications = [
+            Notification(
+                user_id=student.id,
+                sender_id=current_user.id,
+                title=subject,
+                message=message,
+                type='message'
+            )
+            for student in student_recipients
+        ]
+        db.session.add_all(notifications)
+        db.session.commit()
+        flash(f'Broadcast sent successfully to {len(notifications)} students.', 'success')
+        return redirect(url_for('notifications'))
+
+    try:
+        recipient_id = int(recipient_token)
+    except ValueError:
+        flash('Invalid recipient selected.', 'error')
         return redirect(url_for('notifications'))
 
     recipient = User.query.get(recipient_id)
