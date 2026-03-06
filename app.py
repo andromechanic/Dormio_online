@@ -619,7 +619,10 @@ def toggle_user(id):
 @login_required
 def notifications():
     user_notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
-    message_recipients = User.query.filter(User.id != current_user.id, User.is_active == True).order_by(User.full_name).all()
+    message_recipients_query = User.query.filter(User.id != current_user.id, User.is_active == True)
+    if current_user.role == 'student':
+        message_recipients_query = message_recipients_query.filter(User.role != 'student')
+    message_recipients = message_recipients_query.order_by(User.full_name).all()
 
     # Mark all as read
     for notif in user_notifications:
@@ -644,6 +647,9 @@ def send_staff_message():
         return redirect(url_for('notifications'))
     if recipient.id == current_user.id:
         flash('Please select a different recipient.', 'error')
+        return redirect(url_for('notifications'))
+    if current_user.role == 'student' and recipient.role == 'student':
+        flash('Students cannot message other students.', 'error')
         return redirect(url_for('notifications'))
 
     notification = Notification(
@@ -675,6 +681,9 @@ def reply_staff_message(id):
     recipient = User.query.get(source.sender_id)
     if not recipient or not recipient.is_active:
         flash('Original sender is not available for reply.', 'error')
+        return redirect(url_for('notifications'))
+    if current_user.role == 'student' and recipient.role == 'student':
+        flash('Students cannot message other students.', 'error')
         return redirect(url_for('notifications'))
 
     base_subject = source.title or 'Message'
