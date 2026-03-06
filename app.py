@@ -619,19 +619,16 @@ def toggle_user(id):
 @login_required
 def notifications():
     user_notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
-    staff_users = []
-    if current_user.role in STAFF_ROLES:
-        staff_users = User.query.filter(User.role.in_(STAFF_ROLES), User.id != current_user.id).order_by(User.full_name).all()
+    message_recipients = User.query.filter(User.id != current_user.id, User.is_active == True).order_by(User.full_name).all()
 
     # Mark all as read
     for notif in user_notifications:
         notif.read = True
     db.session.commit()
-    return render_template('notifications.html', notifications=user_notifications, staff_users=staff_users)
+    return render_template('notifications.html', notifications=user_notifications, message_recipients=message_recipients)
 
 @app.route('/notifications/send', methods=['POST'])
 @login_required
-@role_required('admin', 'warden', 'principal')
 def send_staff_message():
     recipient_id = request.form.get('recipient_id', type=int)
     subject = (request.form.get('subject') or '').strip()
@@ -642,7 +639,7 @@ def send_staff_message():
         return redirect(url_for('notifications'))
 
     recipient = User.query.get(recipient_id)
-    if not recipient or recipient.role not in STAFF_ROLES:
+    if not recipient or not recipient.is_active:
         flash('Invalid recipient selected.', 'error')
         return redirect(url_for('notifications'))
     if recipient.id == current_user.id:
@@ -663,7 +660,6 @@ def send_staff_message():
 
 @app.route('/notifications/reply/<int:id>', methods=['POST'])
 @login_required
-@role_required('admin', 'warden', 'principal')
 def reply_staff_message(id):
     source = Notification.query.get_or_404(id)
     reply_text = (request.form.get('reply_message') or '').strip()
@@ -677,7 +673,7 @@ def reply_staff_message(id):
         return redirect(url_for('notifications'))
 
     recipient = User.query.get(source.sender_id)
-    if not recipient or recipient.role not in STAFF_ROLES:
+    if not recipient or not recipient.is_active:
         flash('Original sender is not available for reply.', 'error')
         return redirect(url_for('notifications'))
 
