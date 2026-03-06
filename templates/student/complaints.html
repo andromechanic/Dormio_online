@@ -54,12 +54,12 @@
                     </div>
                     
                     <div class="mt-3 flex items-center space-x-4 text-xs text-slate-400">
-                        <span><i class="ph ph-calendar mr-1"></i>{{ complaint.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        <span><i class="ph ph-calendar mr-1"></i>{{ complaint.created_at|format_datetime('%Y-%m-%d %H:%M') }}</span>
                         {% if complaint.updated_at %}
-                        <span><i class="ph ph-clock mr-1"></i>Updated: {{ complaint.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        <span><i class="ph ph-clock mr-1"></i>Updated: {{ complaint.updated_at|format_datetime('%Y-%m-%d %H:%M') }}</span>
                         {% endif %}
                         {% if complaint.resolved_at %}
-                        <span class="text-green-600"><i class="ph ph-check-circle mr-1"></i>Resolved: {{ complaint.resolved_at.strftime('%Y-%m-%d') }}</span>
+                        <span class="text-green-600"><i class="ph ph-check-circle mr-1"></i>Resolved: {{ complaint.resolved_at|format_datetime('%Y-%m-%d') }}</span>
                         {% endif %}
                     </div>
                     

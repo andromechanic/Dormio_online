@@ -43,7 +43,7 @@
                             {% for log, student in logs %}
                             <tr class="bg-white border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700" data-testid="log-timestamp">
-                                    {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                                    {{ log.timestamp|format_datetime('%Y-%m-%d %H:%M:%S') }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid="log-student-name">
                                     {{ student.name }}

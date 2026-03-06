@@ -11,7 +11,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm"><div class="px-6 py-4 border-b border-slate-200"><h2 class="text-xl font-medium text-slate-800">Recent Activity</h2></div>
     {% if recent_logs %}
-    <div class="divide-y divide-slate-100">{% for log, student in recent_logs[:5] %}<div class="px-6 py-3 flex items-center justify-between"><div><p class="font-medium text-slate-900">{{ student.user.full_name if student.user else 'N/A' }}</p><p class="text-xs text-slate-500">{{ log.timestamp.strftime('%H:%M:%S') }}</p></div><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if log.action == 'IN' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">{{ log.action }}</span></div>{% endfor %}</div>
+    <div class="divide-y divide-slate-100">{% for log, student in recent_logs[:5] %}<div class="px-6 py-3 flex items-center justify-between"><div><p class="font-medium text-slate-900">{{ student.user.full_name if student.user else 'N/A' }}</p><p class="text-xs text-slate-500">{{ log.timestamp|format_datetime('%H:%M:%S') }}</p></div><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if log.action == 'IN' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">{{ log.action }}</span></div>{% endfor %}</div>
     {% else %}<div class="px-6 py-12 text-center"><p class="text-slate-500">No recent activity</p></div>{% endif %}</div>
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm"><div class="px-6 py-4 border-b border-slate-200"><h2 class="text-xl font-medium text-slate-800">Pending Complaints</h2></div>
     {% if recent_complaints %}

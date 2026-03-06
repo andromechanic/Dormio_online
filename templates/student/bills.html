@@ -64,7 +64,7 @@
                     <td class="px-6 py-4 text-sm text-slate-700">{{ bill.month }}</td>
                     <td class="px-6 py-4 text-sm text-slate-900 font-semibold">₹{{ "%.2f"|format(bill.amount) }}</td>
                     <td class="px-6 py-4 text-sm {% if is_overdue %}text-red-700 font-semibold{% else %}text-slate-700{% endif %}">
-                        {{ bill.due_date.strftime('%Y-%m-%d') }}
+                        {{ bill.due_date|format_datetime('%Y-%m-%d') }}
                         {% if is_overdue %}<span class="text-xs block">OVERDUE</span>{% endif %}
                     </td>
                     <td class="px-6 py-4">
@@ -73,7 +73,7 @@
                             <i class="ph-fill ph-check-circle mr-1"></i>Paid
                         </span>
                         {% if bill.paid_date %}
-                        <p class="text-xs text-slate-500 mt-1">{{ bill.paid_date.strftime('%Y-%m-%d') }}</p>
+                        <p class="text-xs text-slate-500 mt-1">{{ bill.paid_date|format_datetime('%Y-%m-%d') }}</p>
                         {% endif %}
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if is_overdue %}bg-red-100 text-red-800 border border-red-200{% else %}bg-orange-100 text-orange-800 border border-orange-200{% endif %}">

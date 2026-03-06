@@ -63,6 +63,14 @@ def to_ist(dt_value):
         dt_value = dt_value.replace(tzinfo=timezone.utc)
     return dt_value.astimezone(IST)
 
+@app.template_filter('format_datetime')
+def format_datetime(value, fmt='%Y-%m-%d %H:%M:%S'):
+    if not value:
+        return ''
+    if isinstance(value, datetime):
+        value = to_ist(value)
+    return value.strftime(fmt)
+
 def ensure_notification_message_columns():
     inspector = inspect(db.engine)
     columns = {c['name'] for c in inspector.get_columns('notification')}
