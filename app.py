@@ -8,11 +8,13 @@ from openpyxl.styles import Font, PatternFill, Alignment
 import io
 from flask import request, jsonify
 from sqlalchemy import inspect, text
+from zoneinfo import ZoneInfo
 
 from models import db, User, Student, AttendanceLog, Bill, Payment, Complaint, Notification
 
 app = Flask(__name__)
 STAFF_ROLES = ('admin', 'warden', 'principal')
+IST = ZoneInfo("Asia/Kolkata")
 
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
@@ -732,7 +734,11 @@ def rfid_scan():
     new_status = 'IN' if student.current_status == 'OUT' else 'OUT'
     student.current_status = new_status
 
-    log = AttendanceLog(student_id=student.id, action=new_status)
+    log = AttendanceLog(
+        student_id=student.id,
+        action=new_status,
+        timestamp=datetime.now(IST)
+    )
     db.session.add(log)
     db.session.commit()
 
